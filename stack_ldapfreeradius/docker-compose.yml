@@ -1,0 +1,53 @@
+# https://github.com/irasnyd/freeradius-ldap
+version: '3.8'
+services:
+  radius:
+    image: irasnyd/freeradius-ldap:latest
+    ports:
+        - "1812:1812/udp"
+        - "1813:1813/udp"
+    environment:
+        - "LDAP_HOST=192.168.58.191"
+        - "LDAP_USER=cn=admin,dc=moralesespejo,dc=com"
+        - "LDAP_PASS=moralesespejo"
+        - "LDAP_BASEDN=dc=moralesespejo,dc=com"
+        - "LDAP_USER_BASEDN=ou=usuarios,dc=moralesespejo,dc=com"
+   #Ejemplo para varios clientes - "RADIUS_CLIENT_CREDENTIALS=1.2.3.4:password1234,5.6.7.8:password5678"
+        - "RADIUS_CLIENT_CREDENTIALS=192.168.58.190:bolson"
+        - "LDAP_GROUP_BASEDN=ou=grupos,dc=moralesespejo,dc=com"
+   #     - "LDAP_RADIUS_ACCESS_GROUP=radius"
+    mem_limit: "1g"
+    restart: "always"
+
+  ldap:
+    image: osixia/openldap:latest
+    container_name: ldap
+    environment:
+        - LDAP_ORGANISATION=moralesespejo
+        - LDAP_DOMAIN=moralesespejo.com
+        - "LDAP_BASE_DN=dc=moralesespejo,dc=com"
+        - LDAP_ADMIN_PASSWORD=moralesespejo
+    volumes:
+        - ldap:/var/lib/ldap
+        - slapd:/etc/ldap/slapd.d
+        - certs:/container/service/slapd/assets/certs/
+    ports:
+        - 389:389
+        - 636:636
+    restart: "always"
+
+  phpldapadmin:
+    image: osixia/phpldapadmin:latest
+    container_name: phpldapadmin
+    environment:
+      PHPLDAPADMIN_LDAP_HOSTS: "ldap"
+      PHPLDAPADMIN_HTTPS: "false"
+    ports:
+      - "8080:80"
+    depends_on:
+      - ldap
+
+volumes:
+    ldap:
+    slapd:
+    certs:
